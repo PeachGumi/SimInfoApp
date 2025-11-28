@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.telephony.TelephonyManager
@@ -158,6 +159,32 @@ class MainActivity : AppCompatActivity() {
                 else -> "その他/不明"
             }
             info.append("Network Type（通信方式）: $networkTypeDesc\n")
+
+            // --- 詳細なネットワーク状態 ---
+            info.append("\n【詳細なネットワーク状態】\n")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    val serviceState = tm.serviceState
+                    val serviceStateDesc = when (serviceState?.state) {
+                        android.telephony.ServiceState.STATE_IN_SERVICE -> "圏内 (In Service)"
+                        android.telephony.ServiceState.STATE_OUT_OF_SERVICE -> "圏外 (Out of Service)"
+                        android.telephony.ServiceState.STATE_EMERGENCY_ONLY -> "緊急通報のみ"
+                        android.telephony.ServiceState.STATE_POWER_OFF -> "電源オフ"
+                        else -> "不明 (${serviceState?.state})"
+                    }
+                    info.append("サービス状態: $serviceStateDesc\n")
+                    serviceState?.let {
+                        info.append("接続中の事業者: ${it.operatorAlphaLong}\n")
+                        info.append("ローミング状態 (詳細): ${if (it.roaming) "はい" else "いいえ"}\n")
+                        info.append("ネットワーク選択: ${if (it.isManualSelection) "手動" else "自動"}\n")
+                    }
+                } catch (e: SecurityException) {
+                    info.append("サービス状態: 取得に失敗しました (権限不足の可能性があります)\n")
+                }
+            } else {
+                info.append("サービス状態: Android 8.0 (Oreo) 以降で対応しています\n")
+            }
+
         } else {
             info.append("→ 権限が未許可のため表示できません\n")
         }
