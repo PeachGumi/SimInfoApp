@@ -45,8 +45,11 @@ class MainActivity : AppCompatActivity() {
             intent.data = Uri.parse("package:$packageName")
             startActivity(intent)
         }
+    }
 
-        // 起動直後に許可不要な情報を表示
+    override fun onResume() {
+        super.onResume()
+        // 画面が表示されるたびにSIM情報を更新
         loadSimInfo()
     }
 
