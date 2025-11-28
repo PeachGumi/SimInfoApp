@@ -8,25 +8,23 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.telephony.TelephonyManager
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.example.siminfoapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_READ_PHONE_STATE = 100
-    private lateinit var infoView: TextView
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        infoView = findViewById(R.id.infoView)
-        infoView.text = "SIM情報を表示します"
+        binding.infoView.text = "SIM情報を表示します"
 
-        val btnGrant: Button = findViewById(R.id.btnGrant)
-        btnGrant.setOnClickListener {
+        binding.btnGrant.setOnClickListener {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
                 != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(
@@ -39,8 +37,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val btnRevoke: Button = findViewById(R.id.btnRevoke)
-        btnRevoke.setOnClickListener {
+        binding.btnRevoke.setOnClickListener {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
             intent.data = Uri.parse("package:$packageName")
             startActivity(intent)
@@ -63,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 loadSimInfo()
             } else {
-                infoView.text = "READ_PHONE_STATE が拒否されました"
+                binding.infoView.text = "READ_PHONE_STATE が拒否されました"
             }
         }
     }
@@ -166,6 +163,6 @@ class MainActivity : AppCompatActivity() {
             info.append("→ 権限が未許可のため表示できません\n")
         }
 
-        infoView.text = info.toString()
+        binding.infoView.text = info.toString()
     }
 }
