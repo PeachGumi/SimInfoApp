@@ -22,13 +22,19 @@
         android:text="電話状態の読み取りを取り消す"
         android:layout_marginBottom="16dp" />
 
-    <!-- 情報表示エリア -->
-    <TextView
-        android:id="@+id/infoView"
+    <!-- 情報表示エリア（スクロール可能に） -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ここにSIM情報が表示されます"
-        android:textSize="16sp"
-        android:padding="8dp" />
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/infoView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ここにSIM情報が表示されます"
+            android:textSize="16sp"
+            android:padding="8dp" />
+
+    </ScrollView>
 
 </LinearLayout>
