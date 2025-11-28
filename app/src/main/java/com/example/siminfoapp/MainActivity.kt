@@ -8,14 +8,26 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.telephony.TelephonyManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.siminfoapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private val REQUEST_READ_PHONE_STATE = 100
     private lateinit var binding: ActivityMainBinding
+
+    // Activity Result API を使ったパーミッションリクエストランチャーを準備
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                // 権限が許可された場合
+                loadSimInfo()
+            } else {
+                // 権限が拒否された場合
+                binding.infoView.text = "READ_PHONE_STATE が拒否されました"
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,15 +37,17 @@ class MainActivity : AppCompatActivity() {
         binding.infoView.text = "SIM情報を表示します"
 
         binding.btnGrant.setOnClickListener {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
-                != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
+            // 権限がすでに許可されているか確認
+            if (ContextCompat.checkSelfPermission(
                     this,
-                    arrayOf(Manifest.permission.READ_PHONE_STATE),
-                    REQUEST_READ_PHONE_STATE
-                )
-            } else {
+                    Manifest.permission.READ_PHONE_STATE
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                // 許可済みなら、情報をロード
                 loadSimInfo()
+            } else {
+                // 未許可なら、パーミッションをリクエスト
+                requestPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
             }
         }
 
@@ -50,27 +64,12 @@ class MainActivity : AppCompatActivity() {
         loadSimInfo()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_READ_PHONE_STATE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                loadSimInfo()
-            } else {
-                binding.infoView.text = "READ_PHONE_STATE が拒否されました"
-            }
-        }
-    }
-
     private fun loadSimInfo() {
         val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         val info = StringBuilder()
 
         // 権限状態を表示
-        val granted = ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
         val permissionStatus = if (granted) "READ_PHONE_STATE: 許可済み ✅" else "READ_PHONE_STATE: 未許可 ❌"
         info.append("$permissionStatus\n\n")
 
