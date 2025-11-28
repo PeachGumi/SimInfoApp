@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.telephony.NetworkRegistrationInfo
 import android.telephony.TelephonyManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -86,6 +87,7 @@ class MainActivity : AppCompatActivity() {
             else -> "不明"
         }
 
+        @Suppress("DEPRECATION")
         val phoneTypeDesc = when (tm.phoneType) {
             TelephonyManager.PHONE_TYPE_GSM -> "GSM (携帯電話)"
             TelephonyManager.PHONE_TYPE_CDMA -> "CDMA (携帯電話)"
@@ -107,7 +109,9 @@ class MainActivity : AppCompatActivity() {
 
         // 端末機能関連
         info.append("Phone Type（電話タイプ）: $phoneTypeDesc\n")
+        @Suppress("DEPRECATION")
         info.append("Voice Capable（音声通話可能か）: ${if (tm.isVoiceCapable) "可能" else "不可"}\n")
+        @Suppress("DEPRECATION")
         info.append("SMS Capable（SMS可能か）: ${if (tm.isSmsCapable) "可能" else "不可"}\n\n")
 
         // ===== READ_PHONE_STATE が必要な情報 =====
@@ -115,22 +119,27 @@ class MainActivity : AppCompatActivity() {
 
         if (granted) {
             // 電話番号
+            @Suppress("DEPRECATION")
             val phoneNumber = try { tm.line1Number } catch (e: SecurityException) { null }
             info.append("Phone number（電話番号）: ${phoneNumber ?: "Android10以降では取得不可"}\n")
 
             // IMSI
+            @Suppress("DEPRECATION")
             val subscriberId = try { tm.subscriberId } catch (e: SecurityException) { null }
             info.append("Subscriber ID (IMSI)（加入者ID）: ${subscriberId ?: "Android10以降では取得不可"}\n")
 
             // ICCID
+            @Suppress("DEPRECATION")
             val simSerial = try { tm.simSerialNumber } catch (e: SecurityException) { null }
             info.append("SIM Serial (ICCID)（SIMシリアル番号）: ${simSerial ?: "Android10以降では取得不可"}\n")
 
             // IMEI/MEID
+            @Suppress("DEPRECATION")
             val deviceId = try { tm.deviceId } catch (e: SecurityException) { null }
             info.append("Device ID (IMEI/MEID)（端末ID）: ${deviceId ?: "Android10以降では取得不可"}\n")
 
             // 通話状態
+            @Suppress("DEPRECATION")
             val callState = tm.callState
             val callStateDesc = when (callState) {
                 TelephonyManager.CALL_STATE_IDLE -> "待機中"
@@ -151,14 +160,75 @@ class MainActivity : AppCompatActivity() {
             }
             info.append("Data State（データ接続状態）: $dataStateDesc\n")
 
-            // ネットワークタイプ
-            val networkTypeDesc = when (tm.networkType) {
-                TelephonyManager.NETWORK_TYPE_LTE -> "LTE (4G)"
-                TelephonyManager.NETWORK_TYPE_NR -> "NR (5G)"
-                TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA (3G)"
-                else -> "その他/不明"
+            // --- ネットワークタイプ (詳細) ---
+            info.append("Network Type（通信方式）: ")
+            @Suppress("DEPRECATION")
+            val networkType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                tm.dataNetworkType
+            } else {
+                tm.networkType
             }
-            info.append("Network Type（通信方式）: $networkTypeDesc\n")
+
+            var networkTypeString = when (networkType) {
+                TelephonyManager.NETWORK_TYPE_GPRS -> "GPRS (2G)"
+                TelephonyManager.NETWORK_TYPE_EDGE -> "EDGE (2G)"
+                TelephonyManager.NETWORK_TYPE_UMTS -> "UMTS (3G)"
+                TelephonyManager.NETWORK_TYPE_CDMA -> "CDMA (2G)"
+                TelephonyManager.NETWORK_TYPE_EVDO_0 -> "EVDO rev. 0 (3G)"
+                TelephonyManager.NETWORK_TYPE_EVDO_A -> "EVDO rev. A (3G)"
+                TelephonyManager.NETWORK_TYPE_1xRTT -> "1xRTT (2G)"
+                TelephonyManager.NETWORK_TYPE_HSDPA -> "HSDPA (3G)"
+                TelephonyManager.NETWORK_TYPE_HSUPA -> "HSUPA (3G)"
+                TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA (3G)"
+                TelephonyManager.NETWORK_TYPE_IDEN -> "iDEN (2G)"
+                TelephonyManager.NETWORK_TYPE_EVDO_B -> "EVDO rev. B (3G)"
+                TelephonyManager.NETWORK_TYPE_LTE -> "LTE (4G)"
+                TelephonyManager.NETWORK_TYPE_EHRPD -> "eHRPD (3G)"
+                TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+ (3G)"
+                TelephonyManager.NETWORK_TYPE_GSM -> "GSM (2G)"
+                TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD-SCDMA (3G)"
+                TelephonyManager.NETWORK_TYPE_IWLAN -> "IWLAN (Wi-Fi)"
+                TelephonyManager.NETWORK_TYPE_NR -> "NR (5G)"
+                else -> "その他/不明 ($networkType)"
+            }
+
+            // 5Gの場合、さらに詳細な情報を取得 (Android 10 / API 29 以上)
+            if (networkType == TelephonyManager.NETWORK_TYPE_NR) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    try {
+                        val serviceState = tm.serviceState
+                        serviceState?.let { ss ->
+                            var nrStateDesc = ""
+                            var freqDesc = ""
+
+                            // NR State (NSA or SA) from NetworkRegistrationInfo's toString()
+                            ss.getNetworkRegistrationInfoList()
+                                .firstOrNull { it.domain == NetworkRegistrationInfo.DOMAIN_PS && it.accessNetworkTechnology == TelephonyManager.NETWORK_TYPE_NR }
+                                ?.let { nrRegInfo ->
+                                    val nrRegInfoString = nrRegInfo.toString()
+                                    if (nrRegInfoString.contains("nrState=CONNECTED") || nrRegInfoString.contains("nrState=NOT_RESTRICTED")) {
+                                        nrStateDesc = " (NSA - 非スタンドアロン)"
+                                    } else if (nrRegInfoString.contains("nrState=RESTRICTED")) {
+                                        nrStateDesc = " (SA - スタンドアロン)"
+                                    }
+                                }
+
+                            // NR Frequency Range (mmWave or Sub-6) from ServiceState's toString()
+                            val ssString = ss.toString()
+                            if (ssString.contains("nrFrequencyRange=MMWAVE") || ssString.contains("mNrFrequencyRange=3")) {
+                                freqDesc = " ミリ波"
+                            } else if (ssString.contains("nrFrequencyRange=SUB6") || ssString.contains("mNrFrequencyRange=2")) {
+                                freqDesc = " Sub-6GHz"
+                            }
+
+                            networkTypeString += "$nrStateDesc$freqDesc"
+                        }
+                    } catch (e: SecurityException) {
+                        // 権限がない場合は詳細情報を追加しない
+                    }
+                }
+            }
+            info.append(networkTypeString + "\n")
 
             // --- 詳細なネットワーク状態 ---
             info.append("\n【詳細なネットワーク状態】\n")
