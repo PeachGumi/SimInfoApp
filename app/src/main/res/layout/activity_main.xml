@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:fitsSystemWindows="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <!-- 権限操作ボタンを上に配置 -->
+    <Button
+        android:id="@+id/btnGrant"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="電話状態の読み取りを許可する"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnRevoke"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="電話状態の読み取りを取り消す"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 情報表示エリア -->
+    <TextView
+        android:id="@+id/infoView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ここにSIM情報が表示されます"
+        android:textSize="16sp"
+        android:padding="8dp" />
+
+</LinearLayout>
